@@ -10,6 +10,7 @@
 #include "cv.h"
 #include "highgui.h"
 #include <getopt.h>             /* getopt_long() */
+#include "capture.h"
 
 using namespace cv;
 
@@ -36,6 +37,20 @@ long_options[] = {
 		{0, 0, 0, 0}
 };
 
+/**
+ * @brief 捕捉摄像头测试测试程序
+ * @param num 捕捉的帧数
+ */
+static void captureTest(int num) {
+	openDevice();
+	initDevice();
+	start_capturing();
+	captureLoop(num);
+	stop_capturing();
+	uninitDevice();
+	closeDevice();
+	fprintf(stderr, "\n");
+}
 int main(int argc, char** argv) {
 	String inputImagename = "test.jpg";
 	bool change2Gray = false;
@@ -75,6 +90,7 @@ int main(int argc, char** argv) {
         cvtColor(img, gray, CV_BGR2GRAY);
         imshow("gray", gray);
     }
+    captureTest(70);
     /* 等待按键，关闭窗口 */
     waitKey(0);
     return 0;
