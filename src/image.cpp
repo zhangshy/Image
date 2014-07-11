@@ -37,6 +37,11 @@ long_options[] = {
 		{0, 0, 0, 0}
 };
 
+static FILE *yuvFd = NULL;
+/** 将帧数据直接存入文件 */
+static void save2File(const void *p, int size) {
+	fwrite(p, size, 1, yuvFd);
+}
 /**
  * @brief 捕捉摄像头测试测试程序
  * @param num 捕捉的帧数
@@ -44,11 +49,14 @@ long_options[] = {
 static void captureTest(int num) {
 	openDevice();
 	initDevice();
+	yuvFd = fopen("test.yuv", "wa+");
+	registerProcessImageCallback(save2File);
 	start_capturing();
 	captureLoop(num);
 	stop_capturing();
 	uninitDevice();
 	closeDevice();
+	fclose(yuvFd);
 	fprintf(stderr, "\n");
 }
 int main(int argc, char** argv) {
@@ -76,6 +84,7 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
+    captureTest(70);
     /* 将图片信息读入Mat */
     Mat img = imread(inputImagename);
     if (!img.data) {
@@ -90,7 +99,6 @@ int main(int argc, char** argv) {
         cvtColor(img, gray, CV_BGR2GRAY);
         imshow("gray", gray);
     }
-    captureTest(70);
     /* 等待按键，关闭窗口 */
     waitKey(0);
     return 0;

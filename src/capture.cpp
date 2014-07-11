@@ -31,6 +31,19 @@ int force_format = 0;
 struct buffer *buffers;
 unsigned int n_buffers;
 
+/**
+ * @brief 默认数据处理，输出一个'.'
+ */
+static void printDot(const void *p, int size) {
+	fflush(stderr);
+	fprintf(stderr, ".");
+	fflush(stdout);
+}
+/**
+ * 捕捉到帧数据的处理函数
+ */
+static process_image_callback_t process_image_callback = printDot;
+
 static int xioctl(int fh, int request, void *arg) {
 	int r;
 	do {
@@ -44,14 +57,6 @@ void errno_exit(const char *s) {
 	exit(EXIT_FAILURE);
 }
 
-/**
- * @brief 处理一帧数据
- */
-void process_image(const void *p, int size) {
-	fflush(stderr);
-	fprintf(stderr, ".");
-	fflush(stdout);
-}
 
 /**
  * @brief 将捕捉的帧数据读出来并处理
@@ -73,7 +78,7 @@ int read_frame(void) {
 				errno_exit("read");
 			}
 		}
-		process_image(buffers[0].start, buffers[0].length);
+		process_image_callback(buffers[0].start, buffers[0].length);
 		break;
 	case IO_METHOD_MMAP:
 		CLEAR(buf);
@@ -91,7 +96,7 @@ int read_frame(void) {
 			}
 		}
 		assert(buf.index<n_buffers);
-		process_image(buffers[buf.index].start, buf.bytesused);
+		process_image_callback(buffers[buf.index].start, buf.bytesused);
 		if (-1==xioctl(fd, VIDIOC_QBUF, &buf))
 			errno_exit("VIDIOC_QBUF");
 		break;
@@ -115,7 +120,7 @@ int read_frame(void) {
 					&& buf.length==buffers[i].length)
 				break;
 		assert(i<n_buffers);
-		process_image((void *)buf.m.userptr, buf.bytesused);
+		process_image_callback((void *)buf.m.userptr, buf.bytesused);
 		if (-1==xioctl(fd, VIDIOC_QBUF, &buf))
 			errno_exit("VIDIOC_QBUF");
 		break;
@@ -391,7 +396,7 @@ void start_capturing(void) {
 			buf.memory = V4L2_MEMORY_MMAP;
 			buf.index = i;
 			if (-1==xioctl(fd, VIDIOC_QBUF, &buf))
-				errno_exit("VIDIOC_QBUF");
+				errno_exit("start_capturing VIDIOC_QBUF");
 		}
 		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 		if (-1==xioctl(fd, VIDIOC_STREAMON, &type))
@@ -431,6 +436,13 @@ void stop_capturing(void) {
 			errno_exit("VIDIOC_STREAMON");
 		break;
 	}
+}
+
+void registerProcessImageCallback(process_image_callback_t processImage) {
+	if (processImage!=NULL)
+		process_image_callback = processImage;
+	else
+		process_image_callback = printDot;
 }
 
 void captureLoop(int num) {
