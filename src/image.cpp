@@ -38,9 +38,49 @@ long_options[] = {
 };
 
 static FILE *yuvFd = NULL;
+static Mat img;
 /** 将帧数据直接存入文件 */
 static void save2File(const void *p, int size) {
 	fwrite(p, size, 1, yuvFd);
+}
+/**
+ * @breif 将yuv422 yuyv的帧数据转化为rgb，并保存
+ */
+static void yuv2rgb(const void *p, int size) {
+	int rows = 480;	///< 横行数，高
+	int cols = 640;	///< 竖列数，宽
+	/* 初始化Mat 宽640 高480 CV_8UC3 */
+	img = Mat::zeros(rows, cols, CV_8UC3);
+	int i=0, j=0;
+	int index = 0;
+	int r, g, b;
+	unsigned char y, u, v;
+	/* 排列为yuyv */
+	for (i=0; i<rows; i++) {
+		for (j=0; j<cols; j++) {
+			y = *(unsigned char*)(p+index);
+			if (j&1) {
+				/* 奇 */
+				u = *(unsigned char*)(p+index-1);
+				v = *(unsigned char*)(p+index+1);
+			} else {
+				/* 偶 */
+				u = *(unsigned char*)(p+index+1);
+				v = *(unsigned char*)(p+index+3);
+			}
+			index+=2;
+
+			r = y+1.14*(v-128);
+			g = y-0.39*(u-128)-0.58*(v-128);
+			b = y+2.03*(u-128);
+			Vec3b &bgrDst = img.at<Vec3b>(i, j);
+			bgrDst[0] = b>255 ? 255 : (b<0 ? 0 : b);
+			bgrDst[1] = g>255 ? 255 : (g<0 ? 0 : g);
+			bgrDst[2] = r>255 ? 255 : (r<0 ? 0 : r);
+		}
+	}
+	/* 将帧数据保存 */
+	imwrite("capture.jpg", img);
 }
 /**
  * @brief 捕捉摄像头测试测试程序
@@ -50,7 +90,11 @@ static void captureTest(int num) {
 	openDevice();
 	initDevice();
 	yuvFd = fopen("test.yuv", "wa+");
+#if 0
 	registerProcessImageCallback(save2File);
+#else
+	registerProcessImageCallback(yuv2rgb);
+#endif
 	start_capturing();
 	captureLoop(num);
 	stop_capturing();
@@ -84,9 +128,12 @@ int main(int argc, char** argv) {
 			break;
 		}
 	}
-    captureTest(70);
+#if 1
+    captureTest(1);
+#else
     /* 将图片信息读入Mat */
-    Mat img = imread(inputImagename);
+    img = imread(inputImagename);
+#endif
     if (!img.data) {
     	printf("No image data\n");
         return -1;
