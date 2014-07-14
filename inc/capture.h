@@ -1,4 +1,4 @@
-/*
+/**
  * @file capture.h
  *
  * @version 1.0.1
@@ -21,7 +21,7 @@ struct buffer {
 };
 
 /**
- * 捕捉到的帧数据的处理回调函数
+ * @brief 捕捉到的帧数据的处理回调函数
  */
 typedef void (*process_image_callback_t) (const void *p, int size);
 

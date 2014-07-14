@@ -1,4 +1,4 @@
-/*
+/**
  * @file capture.cpp
  * @brief 使用v4l2捕捉图像
  *
@@ -109,7 +109,7 @@ int read_frame(void)
                 }
 
                 assert(buf.index < n_buffers);
-
+                dePrintf("buf.index:%d\n", buf.index);
                 process_image_callback(buffers[buf.index].start, buf.bytesused);
 
                 if (-1 == xioctl(fd, VIDIOC_QBUF, &buf))

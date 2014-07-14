@@ -1,4 +1,4 @@
-/*
+/**
  * @file global.h
  * @brief 打印等的定义
  *
