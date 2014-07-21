@@ -308,6 +308,7 @@ void initDevice(void)
         struct v4l2_cropcap cropcap;
         struct v4l2_crop crop;
         struct v4l2_format fmt;
+        struct v4l2_streamparm streamparm;
         unsigned int min;
 
         /* 查看设备功能 */
@@ -413,6 +414,17 @@ void initDevice(void)
         case IO_METHOD_USERPTR:
                 init_userp(fmt.fmt.pix.sizeimage);
                 break;
+        }
+
+        //查看帧率
+        CLEAR(streamparm);
+        streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        if (0==xioctl(fd, VIDIOC_G_PARM, &streamparm)) {
+        	dePrintf("frame rate:%d/%d\n", streamparm.parm.capture.timeperframe.denominator,
+        			streamparm.parm.capture.timeperframe.numerator);
+        } else {
+        	fprintf(stderr, "VIDIOC_G_PARM error:%s\n",
+        			strerror(errno));
         }
 }
 
